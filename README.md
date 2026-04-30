@@ -1,87 +1,171 @@
-# USIL Simulation Engine
-## Universal SHA-256 Interoperability Layer — v2.0
+# USIL — Universal SHA-256 Interoperability Layer
+### Kaspa L1 Native Protocol Primitive | Whitepaper v3.0 | vProg Spec v1.0
+
+> **Built for the Kaspa Toccata Hardfork (June 5–20, 2026)**  
+> SHA-256 commitment engine · Ghost→Shadow→Live pipeline · CDAG settlement layer · 6-attack threat model validator
 
 ---
 
-## Order of Operations
+## ⚠️ Required Folder Structure
 
-### Windows (Quickstart)
-Double-click `start.bat` — it handles everything automatically.
+The files **must** be organized exactly like this or the simulation will not run.  
+If you cloned from GitHub and everything is flat in the root — fix it first.
 
-### Manual (Windows / Mac / Linux)
+```
+USIL/
+├── usil_sim.py          ← run this
+├── server.py            ← run this second
+├── start.bat            ← Windows: double-click this instead
+├── dashboard.html       ← served automatically by server.py
+├── README.md
+├── USIL_Whitepaper_v3.pdf
+├── USIL_vProg_Spec_v1.md
+│
+└── usil/                ← THIS FOLDER MUST EXIST
+    ├── __init__.py      ← must be here (can be empty)
+    ├── attacks.py
+    ├── bitcoin.py
+    ├── cdag.py
+    ├── commitment.py
+    ├── ledger.py
+    └── pipeline.py
+```
 
-**Step 1 — Install dependencies**
+**If your files are all in root (no usil/ subfolder), fix it:**
+
+```bash
+# Windows Command Prompt — run from inside the USIL folder
+mkdir usil
+move attacks.py usil\
+move bitcoin.py usil\
+move cdag.py usil\
+move commitment.py usil\
+move ledger.py usil\
+move pipeline.py usil\
+move __init__.py usil\
+```
+
+```bash
+# Mac / Linux
+mkdir usil
+mv attacks.py bitcoin.py cdag.py commitment.py ledger.py pipeline.py __init__.py usil/
+```
+
+---
+
+## Quickstart
+
+**Windows — one click:**
+```
+double-click start.bat
+```
+
+**Manual (Windows / Mac / Linux):**
 ```bash
 pip install rich requests
+python usil_sim.py        # runs Ghost→Shadow→Live + all 6 attacks
+python server.py          # starts dashboard at http://localhost:8765
 ```
 
-**Step 2 — Run the simulation**
-```bash
-python usil_sim.py
-```
-This populates `usil.db` with:
-- Ghost commitments (track record)
-- Shadow commitments (challenge window)
-- Live settlement (sBTC minted)
-- Attack log (all 6 attacks caught)
+---
 
-**Step 3 — Start the dashboard server**
-```bash
-python server.py
-```
-Serves the visual dashboard at `http://localhost:8765`
+## What This Is
 
-**Step 4 — Open the dashboard**
-Browser opens automatically. If not: `http://localhost:8765`
+USIL is a cross-chain state commitment protocol implemented as a **Kaspa native vProg**.
+
+Instead of a contract sitting on top of Kaspa, USIL settles SHA-256 commitments directly into Kaspa L1 consensus via the Toccata hardfork's Groth16 ZK opcode — giving synthetic sBTC the same security level as native KAS.
+
+```
+commitment := SHA256( chain_id || block_height || state_root )
+```
+
+The three-way SHA-256 alignment:
+```
+Bitcoin PoW   →  SHA-256  (consensus level)
+Kaspa PoW     →  SHA-256  (consensus level)
+USIL          →  SHA-256  (commitment level)
+```
+
+---
+
+## What the Simulation Proves
+
+| Component | Status |
+|---|---|
+| SHA-256 commitment math | Real — deterministic, versioned |
+| Ghost→Shadow→Live pipeline | Real — flip switch enforced |
+| SPV Merkle proof verification | Real — branch traversal |
+| CDAG blue score finality | Real — simulated Kaspa L1 state |
+| Groth16 ZK verification | Simulated — maps to Toccata L1 opcode |
+| MintLedger double-mint protection | Real — SQLite UNIQUE + CDAG layer |
+| T1 — Invalid state root | Caught — Merkle mismatch |
+| T2 — Oracle collusion | Caught — quorum not met |
+| T3 — Double mint | Caught — ALREADY_MINTED |
+| T4 — Replay / reorg | Caught — confirmation requirement |
+| T5 — Stale commitment | Caught — 2,016-block expiry window |
+| T6 — Proof system bug | Caught — corrupted branch rejected |
+
+---
+
+## Ghost → Shadow → Live
+
+The pipeline mirrors the optimistic → trustless trust model progression:
+
+```
+GHOST    No network calls. Commitment generated, logged to SQLite.
+         Builds track record. Flip switch locked until threshold met.
+
+SHADOW   Real block data. Transaction built but not broadcast.
+         Challenge window open. Maps to optimistic mode.
+
+LIVE     SPV proof verified → CDAG submission → Groth16 ZK check →
+         SilverScript covenant → native sBTC minted at Kaspa L1.
+```
+
+Flip switch logic: Shadow unlocks after 5 Ghost commitments at 90%+ accuracy.  
+Live only fires after Shadow clears the challenge window clean.
+
+---
+
+## CDAG Layer
+
+The simulation includes a full CDAG settlement layer that mirrors the Toccata vProg model:
+
+- Every Live commitment is submitted to the CDAG with a blue score anchor
+- Groth16 ZK verification is simulated (maps directly to the Toccata L1 opcode)
+- CDAG MintLedger enforces double-mint protection at consensus level
+- SilverScript covenant logic enforces all mint conditions
+
+Post-Toccata: swap `usil/cdag.py` simulation calls for actual Kaspa vProg SDK calls.
 
 ---
 
 ## Command Reference
 
 | Command | What it does |
-|---------|-------------|
+|---|---|
 | `python usil_sim.py` | Full simulation — Ghost→Shadow→Live + attacks |
 | `python usil_sim.py --fast` | Speed run (no delays) |
 | `python usil_sim.py --attacks` | Attack simulator only |
-| `python server.py` | Start dashboard server (port 8765) |
+| `python server.py` | Dashboard at http://localhost:8765 |
 | `python server.py --port 9000` | Custom port |
-| `python server.py --no-browser` | Server only, no auto-open |
 
 ---
 
-## Project Structure
+## Live Bitcoin API Switch
 
-```
-usil_sim/
-├── start.bat          ← Windows launcher (run this first)
-├── usil_sim.py        ← Main simulation runner + terminal dashboard
-├── server.py          ← Web dashboard HTTP server
-├── dashboard.html     ← Visual web dashboard (auto-polled)
-├── usil.db            ← SQLite ledger (auto-created on first run)
-│
-└── usil/              ← Core protocol modules
-    ├── commitment.py  ← SHA-256 commitment engine
-    ├── bitcoin.py     ← Block header fetcher (sim + live API)
-    ├── pipeline.py    ← Ghost→Shadow→Live state machine
-    ├── ledger.py      ← SQLite MintLedger + audit trail
-    └── attacks.py     ← Threat model attack simulator
-```
-
----
-
-## Live Bitcoin API (Production Switch)
-
-In `usil/bitcoin.py`, replace `get_block_header()` with:
+In `usil/bitcoin.py`, swap `get_block_header()` for live data:
 
 ```python
 import requests
 
 def get_block_header(height: int) -> dict:
-    hash_url  = f"https://blockstream.info/api/block-height/{height}"
+    hash_url   = f"https://blockstream.info/api/block-height/{height}"
     block_hash = requests.get(hash_url).text.strip()
     block_url  = f"https://blockstream.info/api/block/{block_hash}"
     data       = requests.get(block_url).json()
-    tip        = int(requests.get("https://blockstream.info/api/blocks/tip/height").text)
+    tip        = int(requests.get(
+                   "https://blockstream.info/api/blocks/tip/height").text)
     return {
         "height":        data["height"],
         "hash":          data["id"],
@@ -100,21 +184,20 @@ def get_block_header(height: int) -> dict:
 
 ---
 
-## What the simulation proves
+## Open Questions (Seeking Kaspa Dev Input)
 
-| Component | Status |
-|-----------|--------|
-| SHA-256 commitment math | Real — deterministic, versioned |
-| Ghost→Shadow→Live pipeline | Real — flip switch enforced |
-| SPV Merkle proof verification | Real — branch traversal |
-| MintLedger double-mint protection | Real — SQLite UNIQUE constraint |
-| Stale commitment expiry | Real — 2,016-block window |
-| T1 Invalid state root | Caught — Merkle mismatch |
-| T2 Oracle collusion | Caught — quorum not met |
-| T3 Double mint | Caught — ALREADY_MINTED |
-| T4 Replay / reorg | Caught — confirmation requirement |
-| T5 Stale commitment | Caught — expiry window |
-| T6 Proof system bug | Caught — corrupted branch rejected |
+1. **CDAG storage pricing** — per-byte KAS fee vs flat fee per commitment?
+2. **vProg canonical identity** — fixed ID in genesis state or permissionless deploy?
+3. **Oracle validator staking** — KAS staking or separate USIL token? (preference: KAS)
+4. **MEV resistance** — how should commitment submissions interact with reverse auction ordering?
+5. **DAGKnight alignment** — recommended interface for vProgs to express finality dependencies?
+
+---
+
+## Documents
+
+- `USIL_Whitepaper_v3.pdf` — full protocol spec, threat model, concrete BTC→Kaspa flow
+- `USIL_vProg_Spec_v1.md` — technical vProg specification for Kaspa dev community review
 
 ---
 
@@ -122,15 +205,16 @@ def get_block_header(height: int) -> dict:
 
 **Activation: June 5–20, 2026**
 
-The hardfork delivers exactly what USIL needs at the execution layer:
-- Native KRC-20 tokens on L1 → synthetic sBTC minting
-- Groth16 ZK verification at base layer → Phase 5 zk adapter
-- Covenants++ programmability → commitment registry contracts
-- SilverScript → USIL contract language
-- vProgs → sovereign program settlement (USIL execution model)
+| USIL Requirement | Toccata Primitive |
+|---|---|
+| Off-chain exec + L1 settlement | vProgs |
+| ZK verification at consensus | Groth16 L1 opcode |
+| L1 security for synthetics | Native KRC-20 on L1 |
+| Execution dependency tracking | CDAG |
+| Programmable mint conditions | SilverScript / Covenants++ |
 
 USIL is designed to deploy the week Toccata activates.
 
 ---
 
-*USIL v2.0 — MIT License — github.com/usil-protocol*
+*MIT License — github.com/jdanthenat/USIL*
