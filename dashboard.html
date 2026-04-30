@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>USIL — Universal SHA-256 Interoperability Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0A0E17;
+    --bg2:      #0F1520;
+    --bg3:      #141B2D;
+    --border:   #1E2D45;
+    --teal:     #00C2A8;
+    --teal2:    #00967F;
+    --teal-dim: rgba(0,194,168,0.12);
+    --blue:     #58A6FF;
+    --blue-dim: rgba(88,166,255,0.12);
+    --yellow:   #E3B341;
+    --yel-dim:  rgba(227,179,65,0.12);
+    --green:    #3FB950;
+    --grn-dim:  rgba(63,185,80,0.12);
+    --red:      #F78166;
+    --red-dim:  rgba(247,129,102,0.12);
+    --gray:     #8B949E;
+    --gray2:    #30363D;
+    --white:    #E6EDF3;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-ui:   'Space Grotesk', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: var(--font-ui);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Scanline overlay ───────────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── Header ────────────────────────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky; top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .logo-mark {
+    width: 36px; height: 36px;
+    border: 2px solid var(--teal);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 700;
+    color: var(--teal);
+    letter-spacing: 0.05em;
+    position: relative;
+    animation: pulse-border 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,194,168,0.4); }
+    50%       { box-shadow: 0 0 0 6px rgba(0,194,168,0); }
+  }
+
+  .logo-text { font-size: 15px; font-weight: 700; letter-spacing: 0.08em; color: var(--white); }
+  .logo-sub  { font-size: 10px; color: var(--gray); font-family: var(--font-mono); letter-spacing: 0.05em; }
+
+  .header-right { display: flex; align-items: center; gap: 20px; }
+
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--green);
+  }
+  .live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    animation: blink 1.4s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .last-update { font-family: var(--font-mono); font-size: 10px; color: var(--gray); }
+
+  /* ── Layout ────────────────────────────────────────────────── */
+  main { padding: 24px 32px; max-width: 1440px; margin: 0 auto; }
+
+  .grid-top {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .grid-mid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .grid-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+
+  /* ── Cards ─────────────────────────────────────────────────── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .card:hover { border-color: var(--teal2); }
+
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .card.teal::before   { background: var(--teal); }
+  .card.blue::before   { background: var(--blue); }
+  .card.yellow::before { background: var(--yellow); }
+  .card.green::before  { background: var(--green); }
+  .card.red::before    { background: var(--red); }
+
+  .card-label {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--gray);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .card-val {
+    font-family: var(--font-mono);
+    font-size: 32px; font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .card-sub { font-size: 11px; color: var(--gray); font-family: var(--font-mono); }
+
+  /* ── Pipeline flow ──────────────────────────────────────────── */
+  .pipeline-card { grid-column: span 2; }
+
+  .pipeline-title {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.1em; color: var(--gray);
+    text-transform: uppercase; margin-bottom: 20px;
+    font-family: var(--font-mono);
+  }
+
+  .pipeline-flow {
+    display: flex; align-items: center; gap: 0;
+  }
+
+  .stage-box {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px;
+    position: relative;
+  }
+
+  .stage-icon {
+    width: 56px; height: 56px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 18px; font-weight: 700;
+    position: relative;
+    transition: all 0.4s;
+  }
+
+  .stage-icon.active {
+    animation: stage-glow 2s ease-in-out infinite;
+  }
+
+  .stage-icon.ghost   { color: var(--yellow); border-color: var(--yellow); }
+  .stage-icon.shadow  { color: var(--blue);   border-color: var(--blue);   }
+  .stage-icon.live    { color: var(--green);  border-color: var(--green);  }
+  .stage-icon.attack  { color: var(--red);    border-color: var(--red);    }
+
+  .stage-icon.ghost.active  { box-shadow: 0 0 20px rgba(227,179,65,0.3);  background: var(--yel-dim); }
+  .stage-icon.shadow.active { box-shadow: 0 0 20px rgba(88,166,255,0.3);  background: var(--blue-dim);}
+  .stage-icon.live.active   { box-shadow: 0 0 20px rgba(63,185,80,0.3);   background: var(--grn-dim); }
+
+  @keyframes stage-glow {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.65; }
+  }
+
+  .stage-count {
+    font-family: var(--font-mono); font-size: 20px; font-weight: 700;
+  }
+
+  .stage-count.ghost  { color: var(--yellow); }
+  .stage-count.shadow { color: var(--blue);   }
+  .stage-count.live   { color: var(--green);  }
+  .stage-count.attack { color: var(--red);    }
+
+  .stage-label { font-size: 10px; color: var(--gray); letter-spacing: 0.08em; font-family: var(--font-mono); }
+
+  .pipe-arrow {
+    flex: 0 0 40px;
+    text-align: center;
+    color: var(--teal);
+    font-size: 18px;
+    font-weight: 300;
+    position: relative;
+    top: -12px;
+  }
+
+  .pipe-arrow.flowing::after {
+    content: '';
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--teal);
+    animation: flow-dot 1.8s ease-in-out infinite;
+  }
+
+  @keyframes flow-dot {
+    0%   { opacity: 0; transform: translate(-50%, -50%) translateX(-10px); }
+    50%  { opacity: 1; transform: translate(-50%, -50%) translateX(0); }
+    100% { opacity: 0; transform: translate(-50%, -50%) translateX(10px); }
+  }
+
+  /* ── Commitment table ───────────────────────────────────────── */
+  .section-title {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.12em; color: var(--gray);
+    text-transform: uppercase; margin-bottom: 14px;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 11px; }
+  thead th {
+    text-align: left; padding: 8px 10px;
+    color: var(--gray); font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.06em; font-size: 10px;
+  }
+  tbody tr {
+    border-bottom: 1px solid rgba(30,45,69,0.5);
+    transition: background 0.15s;
+  }
+  tbody tr:hover { background: rgba(0,194,168,0.04); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 8px 10px; color: var(--white); vertical-align: middle; }
+
+  .status-badge {
+    display: inline-block; padding: 2px 8px;
+    border-radius: 3px; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.06em;
+  }
+  .s-ghost    { background: var(--yel-dim);  color: var(--yellow); border: 1px solid rgba(227,179,65,0.3);  }
+  .s-shadow   { background: var(--blue-dim); color: var(--blue);   border: 1px solid rgba(88,166,255,0.3);  }
+  .s-verified { background: var(--teal-dim); color: var(--teal);   border: 1px solid rgba(0,194,168,0.3);   }
+  .s-live     { background: var(--grn-dim);  color: var(--green);  border: 1px solid rgba(63,185,80,0.3);   }
+  .s-invalid  { background: var(--red-dim);  color: var(--red);    border: 1px solid rgba(247,129,102,0.3); }
+  .s-expired  { background: rgba(139,148,158,0.1); color: var(--gray); border: 1px solid rgba(139,148,158,0.3); }
+
+  .hash { color: var(--teal); font-size: 10px; }
+  .dim  { color: var(--gray); }
+
+  /* ── Attack log ────────────────────────────────────────────── */
+  .attack-row td:first-child { color: var(--red); font-weight: 700; }
+
+  .caught-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 8px; border-radius: 3px; font-size: 10px; font-weight: 600;
+  }
+  .caught-yes { background: var(--grn-dim); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+  .caught-no  { background: var(--red-dim); color: var(--red);   border: 1px solid rgba(247,129,102,0.3); }
+
+  /* ── Mint ledger ────────────────────────────────────────────── */
+  .mint-amount { color: var(--green); font-weight: 700; }
+
+  /* ── Flip switch ────────────────────────────────────────────── */
+  .flip-card {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 28px;
+  }
+
+  .flip-status {
+    font-size: 28px; font-weight: 700;
+    font-family: var(--font-mono);
+    margin-bottom: 8px;
+    transition: all 0.4s;
+  }
+  .flip-status.ready { color: var(--green); }
+  .flip-status.ghost { color: var(--yellow); animation: blink 2s ease-in-out infinite; }
+
+  .flip-sub { font-family: var(--font-mono); font-size: 11px; color: var(--gray); margin-bottom: 20px; }
+
+  .progress-bar {
+    width: 100%; height: 6px;
+    background: var(--border);
+    border-radius: 3px; overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, var(--teal), var(--green));
+    transition: width 0.6s ease;
+  }
+  .progress-label { font-family: var(--font-mono); font-size: 10px; color: var(--gray); }
+
+  /* ── Security meter ─────────────────────────────────────────── */
+  .security-meter {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  .sec-row { display: flex; align-items: center; gap: 10px; }
+  .sec-label { font-family: var(--font-mono); font-size: 10px; color: var(--gray); width: 24px; text-align: center; }
+  .sec-bar { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .sec-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+  .sec-fill.crit { background: var(--red); }
+  .sec-fill.high { background: var(--yellow); }
+  .sec-fill.med  { background: var(--blue); }
+  .sec-status { font-family: var(--font-mono); font-size: 10px; width: 60px; text-align: right; }
+  .sec-name { font-family: var(--font-mono); font-size: 10px; color: var(--white); flex: 0 0 180px; }
+
+  /* ── Scrollable tables ──────────────────────────────────────── */
+  .table-wrap { max-height: 280px; overflow-y: auto; }
+  .table-wrap::-webkit-scrollbar { width: 4px; }
+  .table-wrap::-webkit-scrollbar-track { background: var(--bg2); }
+  .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── Empty state ────────────────────────────────────────────── */
+  .empty { text-align: center; padding: 30px; color: var(--gray); font-family: var(--font-mono); font-size: 12px; }
+
+  /* ── Footer ─────────────────────────────────────────────────── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 24px;
+  }
+  .footer-left  { font-family: var(--font-mono); font-size: 10px; color: var(--gray); }
+  .footer-right { font-family: var(--font-mono); font-size: 10px; color: var(--teal); }
+
+  /* ── Entry animation ────────────────────────────────────────── */
+  .card { animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card:nth-child(1) { animation-delay: 0.05s; }
+  .card:nth-child(2) { animation-delay: 0.10s; }
+  .card:nth-child(3) { animation-delay: 0.15s; }
+  .card:nth-child(4) { animation-delay: 0.20s; }
+
+  /* ── Responsive ─────────────────────────────────────────────── */
+  @media (max-width: 1100px) {
+    .grid-top    { grid-template-columns: repeat(2, 1fr); }
+    .grid-mid    { grid-template-columns: 1fr; }
+    .grid-bottom { grid-template-columns: 1fr; }
+    .pipeline-card { grid-column: span 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">Σ</div>
+    <div>
+      <div class="logo-text">USIL</div>
+      <div class="logo-sub">Universal SHA-256 Interoperability Layer</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div>LIVE DATA</div>
+    <div class="last-update" id="last-update">—</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── Top stats ──────────────────────────────────────────── -->
+  <div class="grid-top">
+    <div class="card teal">
+      <div class="card-label">Total Commitments</div>
+      <div class="card-val" id="stat-total" style="color:var(--teal)">—</div>
+      <div class="card-sub">All stages combined</div>
+    </div>
+    <div class="card green">
+      <div class="card-label">Mints Settled</div>
+      <div class="card-val" id="stat-mints" style="color:var(--green)">—</div>
+      <div class="card-sub">sBTC on Kasplex</div>
+    </div>
+    <div class="card red">
+      <div class="card-label">Attacks Caught</div>
+      <div class="card-val" id="stat-attacks" style="color:var(--red)">—</div>
+      <div class="card-sub" id="stat-attack-sub">of 0 attempts</div>
+    </div>
+    <div class="card yellow">
+      <div class="card-label">Hardfork</div>
+      <div class="card-val" id="stat-fork" style="color:var(--yellow); font-size:18px; padding-top:4px;">Jun 5–20</div>
+      <div class="card-sub">Kaspa Toccata — KRC-20 + ZK L1</div>
+    </div>
+  </div>
+
+  <!-- ── Pipeline + Flip switch ─────────────────────────────── -->
+  <div class="grid-mid">
+    <div class="card teal pipeline-card">
+      <div class="pipeline-title">Ghost → Shadow → Live Pipeline</div>
+      <div class="pipeline-flow">
+
+        <div class="stage-box">
+          <div class="stage-icon ghost active" id="icon-ghost">G</div>
+          <div class="stage-count ghost" id="count-ghost">0</div>
+          <div class="stage-label">GHOST</div>
+        </div>
+
+        <div class="pipe-arrow flowing">→</div>
+
+        <div class="stage-box">
+          <div class="stage-icon shadow" id="icon-shadow">S</div>
+          <div class="stage-count shadow" id="count-shadow">0</div>
+          <div class="stage-label">SHADOW</div>
+        </div>
+
+        <div class="pipe-arrow">→</div>
+
+        <div class="stage-box">
+          <div class="stage-icon" id="icon-verified" style="color:var(--teal);border-color:var(--teal)">V</div>
+          <div class="stage-count" id="count-verified" style="color:var(--teal)">0</div>
+          <div class="stage-label">VERIFIED</div>
+        </div>
+
+        <div class="pipe-arrow">→</div>
+
+        <div class="stage-box">
+          <div class="stage-icon live" id="icon-live">L</div>
+          <div class="stage-count live" id="count-live">0</div>
+          <div class="stage-label">LIVE</div>
+        </div>
+
+        <div class="pipe-arrow" style="color:var(--red)">|</div>
+
+        <div class="stage-box">
+          <div class="stage-icon attack" id="icon-attack">⚡</div>
+          <div class="stage-count attack" id="count-invalid">0</div>
+          <div class="stage-label">BLOCKED</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card green flip-card">
+      <div class="card-label">Flip Switch Status</div>
+      <div class="flip-status ghost" id="flip-status">🔴 GHOST MODE</div>
+      <div class="flip-sub" id="flip-sub">Building track record...</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="flip-progress" style="width:0%"></div>
+      </div>
+      <div class="progress-label" id="flip-label">0 / 5 commitments toward shadow unlock</div>
+    </div>
+  </div>
+
+  <!-- ── Bottom row ──────────────────────────────────────────── -->
+  <div class="grid-bottom">
+
+    <!-- Commitment Registry -->
+    <div class="card teal" style="grid-column: span 1;">
+      <div class="section-title">Commitment Registry</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>ID</th><th>HEIGHT</th><th>STATUS</th><th>SHA-256</th>
+          </tr></thead>
+          <tbody id="commitment-tbody">
+            <tr><td colspan="4" class="empty">Run usil_sim.py to populate</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MintLedger -->
+    <div class="card green">
+      <div class="section-title">MintLedger — Settled Synthetics</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>COMMITMENT</th><th>AMOUNT</th><th>ASSET</th><th>UTXO</th>
+          </tr></thead>
+          <tbody id="mint-tbody">
+            <tr><td colspan="4" class="empty">No mints yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:20px;">
+        <div class="section-title">Security — Threat Model</div>
+        <div class="security-meter" id="security-meter">
+          <div class="sec-row"><span class="sec-label" style="color:var(--red)">T1</span><span class="sec-name">Invalid State Root</span><div class="sec-bar"><div class="sec-fill crit" style="width:100%"></div></div><span class="sec-status" style="color:var(--green)">CAUGHT</span></div>
+          <div class="sec-row"><span class="sec-label" style="color:var(--yellow)">T2</span><span class="sec-name">Oracle Collusion</span><div class="sec-bar"><div class="sec-fill high" style="width:100%"></div></div><span class="sec-status" style="color:var(--green)">CAUGHT</span></div>
+          <div class="sec-row"><span class="sec-label" style="color:var(--red)">T3</span><span class="sec-name">Double Mint</span><div class="sec-bar"><div class="sec-fill crit" style="width:100%"></div></div><span class="sec-status" style="color:var(--green)">CAUGHT</span></div>
+          <div class="sec-row"><span class="sec-label" style="color:var(--blue)">T4</span><span class="sec-name">Replay / Reorg</span><div class="sec-bar"><div class="sec-fill med" style="width:100%"></div></div><span class="sec-status" style="color:var(--green)">CAUGHT</span></div>
+          <div class="sec-row"><span class="sec-label" style="color:var(--yellow)">T5</span><span class="sec-name">Stale Commitment</span><div class="sec-bar"><div class="sec-fill high" style="width:100%"></div></div><span class="sec-status" style="color:var(--green)">CAUGHT</span></div>
+          <div class="sec-row"><span class="sec-label" style="color:var(--red)">T6</span><span class="sec-name">Proof System Bug</span><div class="sec-bar"><div class="sec-fill crit" style="width:100%"></div></div><span class="sec-status" style="color:var(--green)">CAUGHT</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attack Log -->
+    <div class="card red">
+      <div class="section-title">Attack Log</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>TYPE</th><th>CAUGHT</th><th>REASON</th>
+          </tr></thead>
+          <tbody id="attack-tbody">
+            <tr><td colspan="3" class="empty">No attacks logged yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-left">
+    USIL v2.0 — Ghost→Shadow→Live  |  SHA-256 Commitment Engine  |  Kaspa/Kasplex Execution Layer
+  </div>
+  <div class="footer-right">
+    github.com/usil-protocol  |  Kaspa Toccata Hardfork: Jun 5–20, 2026
+  </div>
+</footer>
+
+<script>
+const API = 'http://localhost:8765/api/live';
+const POLL_MS = 3000;
+
+const $ = id => document.getElementById(id);
+
+function statusBadge(s) {
+  const map = {
+    GHOST:    'ghost',    SHADOW:   'shadow',
+    VERIFIED: 'verified', LIVE:     'live',
+    INVALID:  'invalid',  EXPIRED:  'expired',
+  };
+  const cls = map[s] || 'expired';
+  return `<span class="status-badge s-${cls}">${s}</span>`;
+}
+
+function truncHash(h, n=20) {
+  if (!h) return '—';
+  return `<span class="hash">${h.slice(0,n)}…</span>`;
+}
+
+function timeAgo(ts) {
+  if (!ts) return '—';
+  const s = Math.floor(Date.now()/1000 - ts);
+  if (s < 60)   return s + 's ago';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  return Math.floor(s/3600) + 'h ago';
+}
+
+function updatePipeline(data) {
+  const p = data.pipeline || {};
+  $('count-ghost').textContent    = p.ghost    || 0;
+  $('count-shadow').textContent   = p.shadow   || 0;
+  $('count-verified').textContent = p.verified || 0;
+  $('count-live').textContent     = p.live     || 0;
+  $('count-invalid').textContent  = (p.invalid || 0) + (p.expired || 0);
+
+  // Animate icons based on activity
+  const liveCount = p.live || 0;
+  const shadowCount = p.shadow || 0;
+  if (liveCount > 0) {
+    $('icon-live').classList.add('active');
+    document.querySelectorAll('.pipe-arrow').forEach(a => a.classList.add('flowing'));
+  }
+  if (shadowCount > 0) $('icon-shadow').classList.add('active');
+}
+
+function updateFlipSwitch(data) {
+  const stats = data.stats || {};
+  const total = stats.total_commitments || 0;
+  const live  = (data.pipeline || {}).live || 0;
+  const MIN   = 5;
+
+  const pct = Math.min(total / MIN * 100, 100);
+  $('flip-progress').style.width = pct + '%';
+  $('flip-label').textContent = `${total} / ${MIN} commitments toward shadow unlock`;
+
+  if (live > 0) {
+    $('flip-status').textContent = '🟢 LIVE ACTIVE';
+    $('flip-status').className   = 'flip-status ready';
+    $('flip-sub').textContent    = `${live} settlement(s) complete on Kasplex`;
+  } else if (total >= MIN) {
+    $('flip-status').textContent = '🟡 SHADOW UNLOCKED';
+    $('flip-status').className   = 'flip-status';
+    $('flip-status').style.color = 'var(--blue)';
+    $('flip-sub').textContent    = 'Challenge window cleared — ready for live';
+  } else {
+    $('flip-status').textContent = '🔴 GHOST MODE';
+    $('flip-status').className   = 'flip-status ghost';
+    $('flip-sub').textContent    = 'Building track record...';
+  }
+}
+
+function updateStats(data) {
+  const s = data.stats || {};
+  $('stat-total').textContent       = s.total_commitments || 0;
+  $('stat-mints').textContent       = s.total_mints       || 0;
+  const caught = s.attacks_caught   || 0;
+  const total  = s.total_attacks    || 0;
+  $('stat-attacks').textContent     = `${caught}/${total}`;
+  $('stat-attack-sub').textContent  = `of ${total} attempts`;
+}
+
+function updateCommitments(data) {
+  const rows = data.commitments || [];
+  if (!rows.length) return;
+  $('commitment-tbody').innerHTML = rows.map(c => `
+    <tr>
+      <td style="color:var(--white);font-weight:600">${c.commitment_id}</td>
+      <td class="dim">${Number(c.block_height).toLocaleString()}</td>
+      <td>${statusBadge(c.status)}</td>
+      <td>${truncHash(c.commitment_hash)}</td>
+    </tr>
+  `).join('');
+}
+
+function updateMints(data) {
+  const rows = data.mints || [];
+  if (!rows.length) return;
+  $('mint-tbody').innerHTML = rows.map(m => `
+    <tr>
+      <td style="color:var(--white)">${m.commitment_id}</td>
+      <td class="mint-amount">${m.mint_amount}</td>
+      <td style="color:var(--teal)">${m.mint_asset}</td>
+      <td class="dim">${(m.utxo_id||'').slice(0,12)}…</td>
+    </tr>
+  `).join('');
+}
+
+function updateAttacks(data) {
+  const rows = data.attacks || [];
+  if (!rows.length) return;
+  $('attack-tbody').innerHTML = rows.map(a => `
+    <tr class="attack-row">
+      <td>${(a.attack_type||'').replace(/_/g,' ')}</td>
+      <td>${a.caught
+        ? '<span class="caught-badge caught-yes">✓ CAUGHT</span>'
+        : '<span class="caught-badge caught-no">✗ ESCAPED</span>'}</td>
+      <td class="dim" style="font-size:10px">${(a.catch_reason||'').slice(0,40)}…</td>
+    </tr>
+  `).join('');
+}
+
+async function poll() {
+  try {
+    const res  = await fetch(API);
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+
+    updateStats(data);
+    updatePipeline(data);
+    updateFlipSwitch(data);
+    updateCommitments(data);
+    updateMints(data);
+    updateAttacks(data);
+
+    const now = new Date();
+    $('last-update').textContent =
+      `Updated ${now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}`;
+  } catch (e) {
+    $('last-update').textContent = 'Server offline — run server.py';
+  }
+  setTimeout(poll, POLL_MS);
+}
+
+// Start polling
+poll();
+</script>
+</body>
+</html>
