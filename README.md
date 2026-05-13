@@ -218,3 +218,20 @@ USIL is designed to deploy the week Toccata activates.
 ---
 
 *MIT License — github.com/jdanthenat/USIL*
+
+---
+
+## Related Protocol — ZNFP
+
+**USIL handles settlement. ZNFP handles transmission.**
+
+ZNFP (Zipcryption Neural Firing Protocol) is the companion protocol that carries USIL commitments across any physical transport layer — from internet to LoRa radio to acoustic coupling.
+
+- ZNFP packet carries: intelligence signal / civic report / threat evidence
+- USIL commitment anchors: the Merkle root on Kaspa L1
+- CID token rewards: the node that generated and transmitted the signal
+
+Every ZNFP packet carrying a USIL commitment becomes immutable on Kaspa L1, court-admissible by design, and rewarded in CID post-Toccata.
+
+ZNFP GitHub: https://github.com/jdanthenat/ZNFP
+Live spec: https://gidldata.com/znfp
