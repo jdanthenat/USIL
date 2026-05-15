@@ -235,3 +235,35 @@ Every ZNFP packet carrying a USIL commitment becomes immutable on Kaspa L1, cour
 
 ZNFP GitHub: https://github.com/jdanthenat/ZNFP
 Live spec: https://gidldata.com/znfp
+
+---
+
+## STARK Proof Integration — Toccata
+
+USIL ZK proofs use the STARK verifier deployed on Kaspa mainnet as part of the Toccata hardfork (June 2026).
+
+**Current parameters (per Michael Sutton commit, May 14 2026):**
+- Block size limit: 250kb (doubled from 125kb)
+- Minimum fee: 100 sompi/gram
+- STARK proof cost: ~0.5 KAS per proof
+- Classic transaction cost: ~0.002 KAS
+- ZK backend: risc0 (Kaspa-deployed verifier)
+
+**USIL Scaling Model:**
+
+USIL commitment costs scale proportionally with user volume.
+
+| Stage | Mode | Cost per commitment |
+|-------|------|-------------------|
+| Launch | Individual STARK proof | ~0.5 KAS |
+| Growth | Batched (10x) | ~0.05 KAS |
+| Scale | Batched (100x) | ~0.005 KAS |
+
+The protocol supports both individual and batched proof modes without spec changes. Batching activates automatically when volume makes it economically efficient.
+
+Ghost → Shadow → Live maps cleanly:
+- **Ghost:** Individual commitment posted immediately (cheap, instant)
+- **Shadow:** Batch ZK proof generated when volume justifies it
+- **Live:** Settlement + CID release (identical regardless of batch size)
+
+This design means early users get individual proofs and scale users get batched proofs — the same protocol handles both.
