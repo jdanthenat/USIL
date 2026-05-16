@@ -314,3 +314,32 @@ Every hardware manifest is signed with ML-DSA-65 (NIST FIPS 204) — the post-qu
 ### Compression Note
 
 The benchmark uses random byte payloads (worst case). Real-world payloads (JSON, text, sensor telemetry) achieve 3-10x compression ratios, increasing effective pipeline throughput proportionally.
+
+---
+
+## CID Bridge — Ghost Superposition Batching
+
+CID acts as the internal bridge currency for all GIDLdata ecosystem transactions. The Ghost phase of USIL enables a quantum-inspired batching optimization that dramatically reduces L1 gas costs.
+
+### The Tollway Model
+### Gas Efficiency
+
+| Mode | STARK proofs | Cost per conversion |
+|------|-------------|-------------------|
+| Unbatched | 1 per conversion | ~0.5 KAS |
+| Micro batch (10x) | 1 per 10 | ~0.05 KAS |
+| Macro batch (100x) | 1 per 100 | ~0.005 KAS |
+| Ghost superposition (1000x) | 1 per 1000 | ~0.0005 KAS |
+
+### Ghost as Trajectory Intelligence
+
+While in superposition the Ghost commitment actively monitors:
+- Current Kaspa gas prices
+- Batch fill rate
+- Exchange rate movement  
+- Network congestion
+
+It collapses (fires) when trajectory is optimal — not on a fixed timer. This is the ZNFP neural firing model applied to settlement: nodes don't fire on every input, they fire when accumulated signal exceeds the action potential threshold.
+
+### Throughput Reference (Pi 5)
+The highway has capacity. The Ghost superposition optimizer makes it affordable at any scale.
