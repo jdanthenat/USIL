@@ -267,3 +267,50 @@ Ghost → Shadow → Live maps cleanly:
 - **Live:** Settlement + CID release (identical regardless of batch size)
 
 This design means early users get individual proofs and scale users get batched proofs — the same protocol handles both.
+
+---
+
+## USIL-ALGO — Zipcryption Hardware Benchmark
+
+The USIL-ALGO hardware manifest standard includes a Zipcryption benchmark that measures compression, encryption, and sharding throughput on any device. This grades hardware for Codex marketplace job matching.
+
+### Grade Table
+
+| Grade | Pipeline MB/s | Example Hardware |
+|-------|--------------|-----------------|
+| PLATINUM | ≥ 100 | High-end GPU workstation |
+| GOLD | ≥ 50 | Desktop CPU / cloud instance |
+| SILVER | ≥ 20 | Laptop / mini PC |
+| BRONZE | ≥ 5 | Raspberry Pi 5 / edge node |
+| BASIC | < 5 | Microcontroller |
+
+### Reference Benchmark — Raspberry Pi 5 (8GB)
+
+```json
+{
+  "device_id": "f21c64651188c3b2",
+  "hardware": { "platform": "aarch64", "processor": "ARM" },
+  "zipcryption_bench": {
+    "compress_mbps": 33.63,
+    "compress_ratio": 1.00,
+    "encrypt_mbps": 21.80,
+    "shard_mbps": 1085.59,
+    "pipeline_mbps": 13.06,
+    "shards": 8,
+    "algorithm": "LZ4+AES256+SHA256-Merkle"
+  },
+  "usil_algo_grade": "BRONZE",
+  "pqc_attestation": {
+    "algorithm": "ML-DSA-65",
+    "quantum_resistant": true
+  }
+}
+```
+
+### PQC Attestation
+
+Every hardware manifest is signed with ML-DSA-65 (NIST FIPS 204) — the post-quantum digital signature standard. Attestations are quantum-resistant and verifiable by any node in the USIL network.
+
+### Compression Note
+
+The benchmark uses random byte payloads (worst case). Real-world payloads (JSON, text, sensor telemetry) achieve 3-10x compression ratios, increasing effective pipeline throughput proportionally.
