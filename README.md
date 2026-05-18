@@ -351,3 +351,22 @@ The highway has capacity. The Ghost superposition optimizer makes it affordable 
 Simulation using live Kaspa mainnet data (May 2026):
 
 ### Current Network Reality
+
+---
+
+## Updated Cost Model — Sutton May 2026
+
+Per Michael Sutton's latest notes on STARK blocks and fee structure:
+
+### Corrected Fee Parameters
+### USIL Updated Cost Model
+### DK Hard Fork Consideration
+The next hard fork targets 25-40 BPS with smaller individual block sizes. Two solutions proposed for STARK proof compatibility:
+
+1. Elastic credit system — nodes earn block size credits over time
+2. PoW variability — miners choose 8x difficulty for 8x block size (mega-blocks)
+
+Ghost intelligence layer will adapt:
+- If mega-block expected → wait and attach STARK proof
+- If regular tx available → use payload (0.002 KAS)
+- Always optimal routing automatically
