@@ -1,0 +1,101 @@
+{
+  "token_name": "Civic Intelligence Dollar",
+  "ticker": "CID",
+  "standard": "KRC-20",
+  "network": "kaspa-mainnet",
+  "launch": "Day 1 post-Toccata",
+  "total_supply": 28700000000,
+  "decimals": 8,
+  
+  "supply_distribution": {
+    "civic_emission": {
+      "pct": 70,
+      "amount": 20090000000,
+      "mechanism": "C.I. verified reports only",
+      "controller": "KCC20Minter covenant"
+    },
+    "ecosystem_treasury": {
+      "pct": 15,
+      "amount": 4305000000,
+      "mechanism": "locked — community governed",
+      "lock_period": "365 days minimum"
+    },
+    "gidldata_development": {
+      "pct": 10,
+      "amount": 2870000000,
+      "mechanism": "vesting 24 months",
+      "cliff": "6 months"
+    },
+    "buyback_pool": {
+      "pct": 5,
+      "amount": 1435000000,
+      "mechanism": "10% monthly revenue buyback",
+      "lock": "Silverscript covenant 365 days"
+    }
+  },
+  
+  "earn_rules": {
+    "ci_report_confirmed": {"min": 1, "max": 26, "unit": "CID"},
+    "ci_first_in_area": {"amount": 15, "unit": "CID"},
+    "ci_emergency_report": {"amount": 20, "unit": "CID"},
+    "ci_corroboration": {"amount": 5, "unit": "CID"},
+    "ci_pattern_alert": {"amount": 25, "unit": "CID"},
+    "ci_expert_report": {"amount": 26, "unit": "CID"}
+  },
+  
+  "never_earned_by": [
+    "device uptime",
+    "staking",
+    "referrals",
+    "holding",
+    "compute work",
+    "sensor operation"
+  ],
+  
+  "bridge_model": {
+    "mechanism": "Ghost superposition",
+    "flow": "any → CID → any",
+    "settlement": "USIL Ghost → Shadow → Live",
+    "gas_model": "parasitic batching when available",
+    "fallback": "Ghost batch settlement"
+  },
+  
+  "buyback_lock": {
+    "revenue_pct": 10,
+    "mechanism": "open market purchase",
+    "lock_contract": "Silverscript covenant",
+    "lock_period_days": 365,
+    "verifiable": true,
+    "public": true
+  },
+  
+  "fiat_separation": {
+    "wraith": "pure fiat — no CID",
+    "pelican": "pure fiat — no CID",
+    "ri_savings": "USD only — no CID",
+    "si_monitoring": "USD only — no CID",
+    "di_rides": "CID bridge — invisible to user",
+    "codex_jobs": "CID bridge — invisible to user",
+    "ci_reports": "earns CID directly"
+  },
+  
+  "minter_covenant": {
+    "type": "KCC20Minter",
+    "ownership": "IDENTIFIER_COVENANT_ID",
+    "admin_key": false,
+    "bypass_possible": false,
+    "reference": "Kaspa KIPs PR #116"
+  },
+  
+  "usil_integration": {
+    "every_mint": "USIL committed",
+    "merkle_proof": "per mint event",
+    "pqc_signed": "ML-DSA-65",
+    "kaspa_anchored": true
+  },
+  
+  "status": "pre-launch — awaiting Toccata",
+  "token_counsel": "required before deployment",
+  "parameters_locked": "2026-05-18",
+  "locked_by": "GIDLdata LLC"
+}
