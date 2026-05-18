@@ -343,3 +343,11 @@ It collapses (fires) when trajectory is optimal — not on a fixed timer. This i
 
 ### Throughput Reference (Pi 5)
 The highway has capacity. The Ghost superposition optimizer makes it affordable at any scale.
+
+---
+
+## Parasitic Batching — Real Network Analysis
+
+Simulation using live Kaspa mainnet data (May 2026):
+
+### Current Network Reality
